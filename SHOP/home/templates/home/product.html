@@ -1,0 +1,115 @@
+{% extends '_base.html' %}
+{#{% load thumbnail %}#}
+{% load static %}
+{% block css %}
+    <link rel="stylesheet" href="{% static 'home/css/product.css' %}">
+{% endblock %}
+{% block title %} product Page {% endblock %}
+{% block body %}
+
+
+    <div class="container">
+        <form method="post" action="{% url 'home:product_search' %}">
+            {% csrf_token %}
+            {{ form }}
+            <button type="submit">Search</button>
+        </form>
+        {% for data in category %}
+            <!-- Example single danger button -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                    {{ data.name }}
+                </button>
+                <ul class="dropdown-menu">
+                    {% for info in data.sub.all %}
+                        <li><a class="dropdown-item" href="#">{{ info.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+        <div class="row">
+
+
+            <div class="col-3">
+                <form action="" method="get">
+                    <div class="multi-range" data-lbound="{{ min_price }}" data-ubound="{{ max_price }}">
+                        <hr>
+                        <input type="range" name="price_1" min="{{ min_price }}" max="{{ max_price }}" step="50000"
+                               value="{{ min_price }}"
+                               oninput="this.parentNode.dataset.lbound=this.value;">
+
+                        <input type="range" name="price_2" min="{{ min_price }}" max="{{ max_price }}" step="50000"
+                               value="{{ max_price }}"
+                               oninput="this.parentNode.dataset.lbound=this.value;">
+                    </div>
+
+                    <label for="">Brand :
+                        {{ filter.form.brand }}
+                    </label>
+                    <div>
+                        {{ filter.form.price }}
+                        {{ filter.form.favorite }}
+                        {{ filter.form.create }}
+                        {{ filter.form.sell }}
+                    </div>
+                    <button type="submit" class="btn btn-danger">Filter</button>
+                </form>
+            </div>
+            <div class="col-9">
+                <h1>welcome to Product Page</h1>
+                <form>
+                    <input type="submit" name="price" value="گران ترین">
+                    <input type="submit" name="price" value="ارزان ترین">
+                    <input type="submit" name="create" value="جدید ترین">
+                    <input type="submit" name="favorite" value="محبوب ترین">
+                    <input type="submit" name="sell" value="پر فروش ترین">
+                    <div style="visibility: hidden">
+                        {{ filter.form.brand }}
+                    </div>
+                </form>
+                {% for product in products %}
+                    <a href="{% url 'home:detail' product.id %}">
+                        <h2>{{ product.name }}</h2>
+                        <img src="{{ product.image.url }}" style="width: 250px" alt="{{ product.name }}"#}
+                             title="{{ product.name }}">
+                        {#                    {% thumbnail product.image '200x200' as img %}#}
+                        {#                        <img src="{{ img.url }}" style="width: 250px" alt="{{ product.name }}"#}
+                        {#                             title="{{ product.name }}">#}
+                        {#                    {% endthumbnail %}#}
+                    </a>
+                    {% if product.discount %}
+                        <h4 style="text-decoration: line-through">{{ product.unit_price }}</h4>
+                        <h3>{{ product.total_price }}</h3>
+                    {% else %}
+                        <h3>{{ product.total_price }}</h3>
+                    {% endif %}
+                    <small>price : {{ product.unit_price }}</small>
+                    <form action="{% url 'cart:compare' product.id %}">
+                        <input type="hidden" value="={{ product.id }} name=='product'">
+                        <button type="submit">compare</button>
+                    </form>
+                {% endfor %}
+            </div>
+        </div>
+
+
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+                {% if products.has_previous %}
+                    <li class="page-item"><a class="page-link"
+                                             href="?page={{ products.previous_page_number }}">Previous</a></li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <a class="page-link" href="?page={{ products.number }}">{{ products.number }}</a>
+                </li>
+
+                {% if products.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ products.next_page_number }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends '_base.html' %}
+{% load jformat %}
+{% block body %}
+    <div class="container">
+        <div class="row">
+            <h1>{{ product.name }}</h1>
+            <h4>Rate : {{ product.average }}</h4>
+            <img src="{{ product.image.url }}" width="200" height="300">
+            <p>{{ product.information }}</p>
+            <h2>LIKE : {{ product.total_like }}</h2>
+            <h2>UnLIKE : {{ product.total_unlike }}</h2>
+            <div class="row">
+                {% for img in images %}
+                    <img src="{{ img.image.url }}" width="100" alt="{{ img.name }}" title="{{ img.name }}">
+                {% endfor %}
+            </div>
+
+
+            {% if request.user.is_authenticated %}
+
+{#                {% if is_favorite %}#}
+{#                    <a href="{% url 'home:favorite' product.id %}">#}
+{#                        <i class="bi bi-heart-fill"></i>#}
+{#                    </a>#}
+{#                {% else %}#}
+{#                    <a href="{% url 'home:favorite' product.id %}">#}
+{#                        <i class="bi bi-heart"></i>#}
+{#                    </a>#}
+{#                {% endif %}#}
+
+                {% if request.user in product.favorite.all %}
+                    <a class="test" href="{% url 'home:favorite' product.id %}">
+                        <i class="bi bi-heart-fill"></i>
+                    </a>
+
+                    {% else %}
+                    <a class="test" href="{% url 'home:favorite' product.id %}">
+                        <i class="bi bi-heart"></i>
+                    </a>
+                    {% endif %}
+
+
+
+
+
+
+
+
+                <a href="{% url 'home:product_like' product.id %}"
+                   class="btn btn-info {% if is_unlike %} disabled {% endif %}">Like</a>
+
+                <a href="{% url 'home:product_unlike' product.id %}"
+                   class="btn btn-primary {% if is_like %} disabled {% endif %}">UnLike</a>
+
+            {% endif %}
+            <hr style="color: red;height: 40px">
+
+            {% if product.status == 'Size' %}
+                <form action="" method="post">
+                    {% csrf_token %}
+                    {% for data in variant %}
+                        <input type="radio" value="{{ data.id }}"
+                                {% if variants.id == data.id %} checked {% endif %}
+                               name="select" onchange="this.form.submit()">
+                        <a href="" style="text-decoration: none">{{ data.size_variant }}</a>
+                    {% endfor %}
+                </form>
+            {% elif product.status == 'Color' %}
+                <form action="" method="post">
+                    {% csrf_token %}
+                    {% for data in variant %}
+                        <input type="radio" value="{{ data.id }}"
+                                {% if variants.id == data.id %} checked {% endif %}
+                               name="select" onchange="this.form.submit()">
+                        <a href="" style="text-decoration: none">{{ data.color_variant }}</a>
+                    {% endfor %}
+                </form>
+            {% endif %}
+        </div>
+        <br>
+        <div class="card bg-danger m-2">
+            <h4>Your Choice : {{ variants.size_variant }} &nbsp;&nbsp; price:{{ variants.total_price }}</h4>
+        </div>
+        <hr>
+
+
+        <br>
+        <div class="card">
+            {% if product.status != 'None' %}
+                <form method="post" action="{% url 'cart:add_cart' product.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="select" value="{{ variants.id }}">
+                    <input type="number" name="quantity" min="1" value="1" max="{{ variants.amount }}">
+                    <button type="submit">Add</button>
+                </form>
+            {% else %}
+                <form method="post" action="{% url 'cart:add_cart' product.id %}">
+                    {% csrf_token %}
+                    <input type="number" name="quantity" min="1" value="1" max="{{ product.amount }}"
+                           required oninvalid="setCustomValidity('حداکثر می بایست {{ product.amount }}')">
+                    <button type="submit">Add</button>
+                </form>
+            {% endif %}
+        </div>
+        <br>
+        <hr>
+        <h2>محصولات مشابه</h2>
+        {% for tag in similar %}
+            <a href="{% url 'home:detail' tag.id %}">
+                <img src="{{ tag.image.url }}" width="100" height="100">
+            </a>
+        {% endfor %}
+    </div>
+
+
+
+    {% for com in comment %}
+        <p>{{ com.comment }}</p>
+        <small>{{ com.rate }}</small>
+        <form method="post" action="{% url 'home:product_reply' product.id com.id %}">
+            {% csrf_token %}
+            <textarea name="comment" id="comment" placeholder="reply ..." rows="4"
+                      required oninvalid="setCustomValidity('پاسخ خود را وارد نمایید ...')"></textarea>
+            <button type="submit" class="btn btn-info">Send Reply</button>
+        </form>
+        {% for data in com.comment_reply.all %}
+            <p>{{ data.comment }}</p>
+            <a href="{% url 'home:comment_like' com.id %}">
+                like-comment
+            </a>
+            <span>like Comment : {{ com.total_comment_like }}</span>
+        {% endfor %}
+
+    {% endfor %}
+    <form action="{% url 'home:product_comment' product.id %}" method="post">
+        {% csrf_token %}
+        {{ comment_form.as_div }}
+        <button type="submit">Send Comment</button>
+    </form>
+    <div>
+        <canvas id="myChart"></canvas>
+    </div>
+    {% block js %}
+        {% if product.status != 'None' %}
+
+            <script>
+                const ctx = document.getElementById('myChart');
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [{% for i in change %} {% if variants.id == i.variant_id %} '{{ i.update }}' {% endif %} ,{% endfor %}],
+                        datasets: [{
+                            label: '# of Votes',
+                            data: [{% for i in change %} {% if variants.id == i.variant_id %} '{{ i.unit_price }}' {% endif %} ,{% endfor %}],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            </script>
+        {% else %}
+
+
+            <script>
+                const ctx = document.getElementById('myChart');
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [{% for i in update %} '{{ i.update|jformat:"%A %d %B %Y" }}' ,{% endfor %}],
+                        datasets: [{
+                            label: '# of Votes',
+                            data: [{% for i in update %} '{{ i.unit_price }}' ,{% endfor %}],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            </script>
+        {% endif %}
+    {% endblock %}
+    <div>
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+    $(document).on('click','.test',function (e){
+        e.preventDefault();
+        alert('ok');
+        $.ajax({
+            url : $(this).attr('href'),
+            type:'GET',
+            data:$(this).serialize(),
+            dataType: 'jason',
+            success: function (response){
+                alert('ok')
+            },
+            error:function (error){
+                alert('error')
+            }
+        })
+    })
+    </script>
+
+{% endblock %}
